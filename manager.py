@@ -140,16 +140,15 @@ class GTBManager:
                 
                 print(f"[*] DB에 포스팅 저장 중: {safe_title}")
                 
-                # Cloudflare D1에 데이터 삽입 (Wrangler 사용)
-                # D1 데이터베이스 이름을 확인해야 함 (기본적으로 'gtb-db' 또는 프로젝트 설정에 따름)
-                db_name = "gtb-db" # 실제 D1 데이터베이스 이름으로 확인 필요
+                # D1 실행 (원격 배포된 DB에 즉시 반영)
+                db_name = "auto-blog-db" # 실제 D1 데이터베이스 이름
                 sql = f"INSERT INTO posts (slug, title, summary, content, category, image_url) VALUES ('{slug}', '{safe_title}', '{safe_summary}', '{safe_content}', '{category_name}', '{image_url}');"
                 
                 # 임시 SQL 파일 생성
                 with open("temp.sql", "w", encoding="utf-8") as f:
                     f.write(sql)
                 
-                # D1 실행 (원격 배포된 DB에 즉시 반영)
+                # D1 실행
                 os.system(f"npx wrangler d1 execute {db_name} --remote --file=temp.sql")
                 os.remove("temp.sql")
 
