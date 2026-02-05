@@ -1,0 +1,65 @@
+@echo off
+REM 한글 출력을 위해 코드 페이지를 UTF-8로 변경
+chcp 65001 >nul
+
+REM ====== 정치 뉴스 숏츠 + 빅유튜브 자동 숏츠 실행 스크립트 ======
+
+REM 로그 파일 경로는 관리하기 편하게 sisa 폴더로 지정합니다
+set LOG=C:\sisa\run_log.txt
+set PYTHONIOENCODING=utf-8
+set FINAL_ERRORLEVEL=0
+
+echo. >> "%LOG%"
+echo [%date% %time%] ========================================== >> "%LOG%"
+echo [%date% %time%] === 전체 작업 스케줄 시작 === >> "%LOG%"
+
+REM ====== 1) 정치 뉴스 숏츠 자동화 실행 ======
+echo [%date% %time%] --- 정치 뉴스 숏츠(main_political.py) 시작 --- >> "%LOG%"
+REM ★ 중요: 작업 스케줄러가 어디서 실행하든 sisa 폴더로 이동합니다.
+cd /d "C:\sisa"
+python main_political.py >> "%LOG%" 2>&1
+
+IF ERRORLEVEL 1 (
+    echo [%date% %time%] [오류] 정치 뉴스 숏츠 실행 중 에러 발생 (계속 진행함) >> "%LOG%"
+    set FINAL_ERRORLEVEL=1
+) ELSE (
+    echo [%date% %time%] [성공] 정치 뉴스 숏츠 정상 종료 >> "%LOG%"
+)
+
+REM 안정성을 위해 2초 대기
+timeout /t 2 /nobreak >nul
+
+REM ====== 2) 빅유튜브 숏츠 자동화 실행 ======
+echo [%date% %time%] --- 디시자동화(main.py) 시작 --- >> "%LOG%"
+REM ★ 중요: dc 폴더로 이동해서 실행합니다.
+cd /d "C:\dc"
+python main.py >> "%LOG%" 2>&1
+
+IF ERRORLEVEL 1 (
+    echo [%date% %time%] [오류] 빅유튜브 실행 중 에러 발생 >> "%LOG%"
+    set FINAL_ERRORLEVEL=1
+) ELSE (
+    echo [%date% %time%] [성공] 빅유튜브 정상 종료 >> "%LOG%"
+)
+
+REM ====== 3) 종료 로직 ======
+echo [%date% %time%] === 모든 작업 완료. 60초 후 종료 시퀀스 진입 === >> "%LOG%"
+
+REM 만약 위에서 에러가 있었어도 로그 남기고 종료는 진행
+IF %FINAL_ERRORLEVEL% EQU 0 (
+    echo [%date% %time%] 결과: 모두 정상 성공 >> "%LOG%"
+) ELSE (
+    echo [%date% %time%] 결과: 일부 오류 발생했으나 종료 진행 >> "%LOG%"
+)
+
+REM 로그 파일 저장이 완료되도록 잠시 대기
+timeout /t 3 /nobreak >nul
+
+REM ----------------------------------------------------
+REM [중요] shutdown 명령어를 절대 경로로 실행
+REM ----------------------------------------------------
+echo [%date% %time%] SHUTDOWN 명령 실행 >> "%LOG%"
+
+C:\Windows\System32\shutdown.exe /s /f /t 60 >> "%LOG%" 2>&1
+
+exit

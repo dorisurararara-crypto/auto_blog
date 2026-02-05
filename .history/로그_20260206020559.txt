@@ -1,0 +1,44 @@
+PS C:\auto_blog> py .\manager.py
+W0206 02:01:54.184000 536 site-packages\torch\utils\flop_counter.py:45] triton not found; flop counting will not work for triton kernels
+W0206 02:01:54.184000 536 site-packages\torch\utils\flop_counter.py:45] triton not found; flop counting will not work for triton kernels
+W0206 02:01:54.185000 536 site-packages\torch\utils\flop_counter.py:45] triton not found; flop counting will not work for triton kernels
+W0206 02:01:54.185000 536 site-packages\torch\utils\flop_counter.py:45] triton not found; flop counting will not work for triton kernels
+W0206 02:01:54.185000 536 site-packages\torch\utils\flop_counter.py:45] triton not found; flop counting will not work for triton kernels
+W0206 02:01:54.185000 536 site-packages\torch\utils\flop_counter.py:45] triton not found; flop counting will not work for triton kernels
+W0206 02:01:54.187000 536 site-packages\torch\utils\flop_counter.py:45] triton not found; flop counting will not work for triton kernels
+W0206 02:01:54.187000 536 site-packages\torch\utils\flop_counter.py:45] triton not found; flop counting will not work for triton kernels
+W0206 02:01:54.187000 536 site-packages\torch\utils\flop_counter.py:45] triton not found; flop counting will not work for triton kernels
+W0206 02:01:54.187000 536 site-packages\torch\utils\flop_counter.py:45] triton not found; flop counting will not work for triton kernels
+W0206 02:01:54.188000 536 site-packages\torch\utils\flop_counter.py:45] triton not found; flop counting will not work for triton kernels
+W0206 02:01:54.188000 536 site-packages\torch\utils\flop_counter.py:45] triton not found; flop counting will not work for triton kernels
+W0206 02:01:54.188000 536 site-packages\torch\utils\flop_counter.py:45] triton not found; flop counting will not work for triton kernels
+[*] GTB 매거진 엔진 최적화 버전 가동 중...
+[*] 모델 로드 중 (최강 최적화 모드)...
+Loading weights: 100%|███████████████████████████████████████████████████████████████████████████████████████████████████████████| 219/219 [00:01<00:00, 140.17it/s, Materializing param=shared.weight]
+Loading weights: 100%|█████████████████████████████████████████████████████████████████████████████████████| 196/196 [00:00<00:00, 2855.24it/s, Materializing param=text_model.final_layer_norm.weight]
+Loading checkpoint shards: 100%|█████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████| 3/3 [00:00<00:00,  3.87it/s]
+Loading pipeline components...: 100%|████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████| 7/7 [00:02<00:00,  2.48it/s]
+[+] FLUX 엔진 준비 완료!
+
+============================================================
+🚀 GTB 자동 포스팅 시작 (안전 모드): 2026-02-06 02:01:58
+============================================================
+
+[*] r/Supplements 트렌드 수집 중 (Reddit Mirror)...
+[+] 레딧 수집 성공: Why do doctors even prescribe ...
+
+[*] r/Gadgets 트렌드 수집 중 (Reddit Mirror)...
+[+] 레딧 수집 성공: The Switch 2's Virtual Boy is ...
+
+[*] r/HomeImprovement 트렌드 수집 중 (Reddit Mirror)...
+[+] 레딧 수집 성공: Question on paying my electric...
+
+[*] r/Technology 트렌드 수집 중 (Reddit Mirror)...
+[+] 레딧 수집 성공: 3 Teen Sisters Jump to Their D...
+
+[*] r/BuyItForLife 트렌드 수집 중 (Reddit Mirror)...
+[+] 레딧 수집 성공: L.L. Bean duffle from 1982...
+
+============================================================
+✅ 모든 작업 완료.
+============================================================
