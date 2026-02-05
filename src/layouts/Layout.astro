@@ -1,0 +1,63 @@
+---
+const { title = "Global Trend Bridge" } = Astro.props;
+---
+
+<html lang="ko">
+	<head>
+		<meta charset="utf-8" />
+		<link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+		<meta name="viewport" content="width=device-width" />
+		<meta name="generator" content={Astro.generator} />
+		<title>{title}</title>
+		<style is:global>
+			@import url('https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;700&display=swap');
+			:root {
+				--primary: #3b82f6;
+				--text-dark: #1f2937;
+				--bg-light: #f9fafb;
+			}
+			body {
+				font-family: 'Noto Sans KR', sans-serif;
+				background-color: var(--bg-light);
+				color: var(--text-dark);
+				margin: 0;
+				line-height: 1.6;
+			}
+			.container {
+				max-width: 800px;
+				margin: 0 auto;
+				padding: 2rem;
+			}
+			header {
+				background: white;
+				border-bottom: 1px solid #e5e7eb;
+				padding: 1rem 0;
+				text-align: center;
+			}
+			header h1 {
+				margin: 0;
+				color: var(--primary);
+				font-size: 1.5rem;
+			}
+			footer {
+				text-align: center;
+				padding: 2rem 0;
+				color: #6b7280;
+				font-size: 0.875rem;
+			}
+		</style>
+	</head>
+	<body>
+		<header>
+			<div class="container">
+				<h1>🌐 Global Trend Bridge</h1>
+			</div>
+		</header>
+		<main class="container">
+			<slot />
+		</main>
+		<footer>
+			<p>&copy; 2026 GTB. All rights reserved.</p>
+		</footer>
+	</body>
+</html>

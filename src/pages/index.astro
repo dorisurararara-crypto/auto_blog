@@ -1,0 +1,64 @@
+---
+import Layout from '../layouts/Layout.astro';
+import { getCollection } from 'astro:content';
+
+const allPosts = await getCollection('blog');
+// 최신순 정렬
+allPosts.sort((a, b) => b.id.localeCompare(a.id));
+---
+
+<Layout title="Global Trend Bridge - 최신 트렌드">
+	<section class="hero">
+		<h2>해외 트렌드를 가장 빠르게 전달합니다</h2>
+		<p>Reddit의 핫한 소식과 인공지능이 만난 새로운 블로그</p>
+	</section>
+
+	<div class="post-grid">
+		{allPosts.map((post) => (
+			<article class="post-card">
+				<a href={`/blog/${post.slug}`}>
+					<h3>{post.data.title}</h3>
+					<p>{post.data.summary}</p>
+					<span class="date">{post.id.split('_')[0]}</span>
+				</a>
+			</article>
+		))}
+	</div>
+</Layout>
+
+<style>
+	.hero {
+		text-align: center;
+		padding: 3rem 0;
+	}
+	.post-grid {
+		display: grid;
+		gap: 2rem;
+	}
+	.post-card {
+		background: white;
+		padding: 1.5rem;
+		border-radius: 0.75rem;
+		box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+		transition: transform 0.2s;
+	}
+	.post-card:hover {
+		transform: translateY(-4px);
+	}
+	.post-card a {
+		text-decoration: none;
+		color: inherit;
+	}
+	.post-card h3 {
+		margin-top: 0;
+		color: #111827;
+	}
+	.post-card p {
+		color: #4b5563;
+		font-size: 0.95rem;
+	}
+	.date {
+		font-size: 0.8rem;
+		color: #9ca3af;
+	}
+</style>

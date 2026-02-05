@@ -1,0 +1,52 @@
+---
+import { getCollection } from 'astro:content';
+import Layout from '../../layouts/Layout.astro';
+
+export async function getStaticPaths() {
+  const blogEntries = await getCollection('blog');
+  return blogEntries.map(entry => ({
+    params: { slug: entry.slug }, props: { entry },
+  }));
+}
+
+const { entry } = Astro.props;
+const { Content } = await entry.render();
+---
+
+<Layout title={entry.data.title}>
+	<article class="blog-post">
+		<h1>{entry.data.title}</h1>
+		<div class="meta">발행일: {entry.id.split('_')[0]}</div>
+		<hr />
+		<div class="content">
+			<Content />
+		</div>
+	</article>
+</Layout>
+
+<style is:global>
+	.blog-post h1 {
+		font-size: 2.25rem;
+		margin-bottom: 0.5rem;
+		line-height: 1.2;
+	}
+	.meta {
+		color: #6b7280;
+		margin-bottom: 2rem;
+	}
+	.content img {
+		max-width: 100%;
+		height: auto;
+		border-radius: 0.5rem;
+		margin: 2rem 0;
+	}
+	.content h2 {
+		margin-top: 2.5rem;
+		border-left: 4px solid var(--primary);
+		padding-left: 1rem;
+	}
+	.content p {
+		margin-bottom: 1.5rem;
+		font-size: 1.1rem;
+	}
+</style>

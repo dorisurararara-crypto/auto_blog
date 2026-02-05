@@ -1,0 +1,32 @@
+[시스템 명칭: Global Trend Bridge (GTB)]
+해외 트렌드 수집부터 로컬 GPU 이미지 생성, Cloudflare Pages 무제한 배포까지 아우르는 고성능 무인 블로그 시스템입니다.
+
+1. 핵심 아키텍처 (Architecture)
+
+A. Collector (수집기)
+- Reddit: PRAW를 이용해 해외 인기 서브레딧의 트렌드 데이터 수집.
+
+B. Processor (가공기 - Anthropic Claude API)
+- Claude를 통해 원문 분석 및 고퀄리티 한국어 SEO 포스팅 생성.
+- 로컬 이미지 생성을 위한 영문 프롬프트 자동 추출.
+
+C. Local Painter (이미지 생성 - RTX 5070 Ti 활용)
+- 로컬 GPU를 이용해 FLUX.1/SDXL 모델로 1024px 고해상도 썸네일 생성.
+- 생성된 이미지는 블로그 자산으로 자동 저장.
+
+D. Affiliate Helper (수익화 - Coupang API)
+- 포스팅 맥락에 맞는 쿠팡 파트너스 상품 딥링크 자동 생성 및 본문 삽입.
+
+E. Publisher (배포기 - Cloudflare Pages + Astro/Next.js)
+- 생성된 콘텐츠를 정적 파일(Markdown/HTML)로 변환.
+- Git Push를 통해 Cloudflare Pages로 자동 배포 (전 세계 무한 트래픽 대응, 비용 0원).
+
+F. Manager & Storage
+- SQLite를 사용하여 포스팅 이력 관리 및 중복 방지.
+- 로컬 PC는 작업 시에만 구동, 배포 후에는 Cloudflare 서버가 24시간 서비스.
+
+2. 운영 시나리오
+- [수집]: Reddit에서 핫한 IT 기기 리뷰 수집.
+- [가공]: Claude가 전문 리뷰어 톤으로 글을 쓰고 쿠팡 링크 삽입.
+- [생성]: 5070 Ti가 멋진 제품 연출 사진 생성.
+- [배포]: 파이썬이 Git Push -> 1분 뒤 전 세계 어디서나 접속 가능한 블로그 게시 완료.
