@@ -1,20 +1,24 @@
 ---
+export const prerender = false;
 import Layout from '../../layouts/Layout.astro';
-import { getCollection } from 'astro:content';
-
-export async function getStaticPaths() {
-  const allPosts = await getCollection('blog');
-  const uniqueCategories = [...new Set(allPosts.map((post) => post.data.category).filter(Boolean))];
-  
-  return uniqueCategories.map((category) => ({
-    params: { category },
-    props: { posts: allPosts.filter((post) => post.data.category === category) },
-  }));
-}
 
 const { category } = Astro.params;
-const { posts } = Astro.props;
-posts.sort((a, b) => b.id.localeCompare(a.id));
+const db = Astro.locals.runtime.env.DB;
+
+// DB에서 해당 카테고리의 글들 가져오기
+let posts = [];
+try {
+	const { results } = await db.prepare("SELECT * FROM posts WHERE category = ? ORDER BY created_at DESC").bind(category).all();
+	posts = results.map(p => ({
+		slug: p.slug,
+		title: p.title,
+		summary: p.summary,
+		image: p.image_url,
+		date: p.created_at ? p.created_at.split(' ')[0].replace(/-/g, '. ') : ''
+	}));
+} catch (e) {
+	console.error("카테고리 글 로드 실패:", e);
+}
 ---
 
 <Layout title={`${category} - GTB 매거진`}>
@@ -31,13 +35,13 @@ posts.sort((a, b) => b.id.localeCompare(a.id));
 				<article class="card">
 					<a href={`/blog/${post.slug}`}>
 						<div class="card-image">
-							{post.data.image && <img src={post.data.image} alt={post.data.title} />}
+							{post.image && <img src={post.image} alt={post.title} loading="lazy" />}
 						</div>
 						<div class="card-content">
-							<h3>{post.data.title}</h3>
-							<p class="summary">{post.data.summary}</p>
+							<h3>{post.title}</h3>
+							<p class="summary">{post.summary}</p>
 							<div class="card-footer">
-								<span class="date">{post.id.split('_')[0]}</span>
+								<span class="date">{post.date}</span>
 							</div>
 						</div>
 					</a>
