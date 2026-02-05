@@ -1,8 +1,13 @@
 import { defineConfig } from 'astro/config';
 import react from '@astrojs/react';
+import sitemap from '@astrojs/sitemap';
 
-// 50만 트래픽도 견디는 가장 안정적인 정적(Static) 배포 설정
+// .env 파일 로드 (process.env가 안 먹힐 수 있으므로 직접 하드코딩하거나 dotenv 사용 권장)
+// 여기서는 기본적으로 Cloudflare Pages URL을 가정하고, 나중에 수정 가능하도록 합니다.
+const SITE_URL = 'https://your-blog.pages.dev'; 
+
 export default defineConfig({
-  integrations: [react()],
+  site: SITE_URL, // 사이트 주소 필수!
+  integrations: [react(), sitemap()],
   output: 'static'
 });
