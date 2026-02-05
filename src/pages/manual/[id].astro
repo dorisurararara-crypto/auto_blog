@@ -1,0 +1,48 @@
+---
+export const prerender = false;
+import Layout from '../../layouts/Layout.astro';
+import { Marked } from 'marked'; // 마크다운 변환 라이브러리 (설치 필요)
+
+const { id } = Astro.params;
+const db = Astro.locals.runtime.env.DB;
+
+const post = await db.prepare("SELECT * FROM manual_posts WHERE id = ?").bind(id).first();
+
+if (!post) {
+    return Astro.redirect('/404');
+}
+
+// 마크다운을 HTML로 변환
+const marked = new Marked();
+const htmlContent = marked.parse(post.content);
+---
+
+<Layout title={post.title} description={post.summary} image={post.image_url}>
+	<article class="post-article">
+		<header class="post-header">
+			<span class="category">{post.category || '인사이트'}</span>
+			<h1>{post.title}</h1>
+			<div class="post-meta">
+				<time>{post.created_at.split(' ')[0]}</time>
+			</div>
+		</header>
+
+		{post.image_url && (
+			<div class="featured-image">
+				<img src={post.image_url} alt={post.title} />
+			</div>
+		)}
+
+		<div class="prose" set:html={htmlContent}></div>
+	</article>
+</Layout>
+
+<style>
+	.post-article { max-width: 700px; margin: 4rem auto; }
+	.post-header { text-align: center; margin-bottom: 4rem; }
+	.category { color: #2563eb; font-weight: 700; font-size: 0.9rem; background: #eff6ff; padding: 0.3rem 0.8rem; border-radius: 20px; }
+	h1 { font-size: 2.5rem; margin: 1.5rem 0; font-weight: 800; letter-spacing: -1.5px; }
+	.featured-image { margin-bottom: 3rem; border-radius: 1.5rem; overflow: hidden; }
+	.featured-image img { width: 100%; display: block; }
+	.prose { font-size: 1.15rem; line-height: 1.9; color: #334155; }
+</style>

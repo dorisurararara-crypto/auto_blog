@@ -1,0 +1,128 @@
+---
+export const prerender = false;
+import Layout from '../../layouts/Layout.astro';
+
+const auth = Astro.url.searchParams.get('pw');
+if (auth !== '1234') {
+    return new Response('접근 권한이 없습니다.', { status: 403 });
+}
+
+const db = Astro.locals.runtime.env.DB;
+
+// 1. 통계 데이터
+const totalVisits = await db.prepare("SELECT COUNT(*) as count FROM stats WHERE type = 'visit'").first('count');
+const coupangClicks = await db.prepare("SELECT COUNT(*) as count FROM stats WHERE type = 'click'").first('count');
+
+// 2. 직접 작성한 글 목록 (CRUD용)
+const manualPosts = await db.prepare("SELECT * FROM manual_posts ORDER BY created_at DESC").all();
+---
+
+<Layout title="GTB 매거진 - 통합 관리자">
+	<div class="admin-dashboard">
+		<header class="admin-header">
+			<h1>👑 GTB 매거진 통합 컨트롤러</h1>
+			<p>통계 확인부터 글 작성까지 한 곳에서 관리하세요.</p>
+		</header>
+
+		<!-- 상단 요약 통계 -->
+		<section class="stat-grid">
+			<div class="stat-card">
+				<span class="label">총 방문자</span>
+				<span class="value">{totalVisits}</span>
+			</div>
+			<div class="stat-card">
+				<span class="label">쿠팡 클릭</span>
+				<span class="value">{coupangClicks}</span>
+			</div>
+		</section>
+
+		<!-- 글 작성 섹션 (Create) -->
+		<section class="admin-section">
+			<div class="section-header">
+				<h2>📝 직접 글쓰기</h2>
+			</div>
+			<form id="postForm" class="post-form">
+				<input type="text" name="title" placeholder="제목을 입력하세요" required />
+				<input type="text" name="category" placeholder="카테고리 (IT테크, 건강, 라이프)" required />
+				<input type="text" name="imageUrl" placeholder="썸네일 이미지 URL" />
+				<textarea name="summary" placeholder="짧은 요약 문구"></textarea>
+				<textarea name="content" placeholder="본문 내용을 입력하세요 (마크다운 지원)" class="content-area" required></textarea>
+				<button type="submit" class="btn-primary">포스팅 발행하기</button>
+			</form>
+		</section>
+
+		<!-- 글 목록 섹션 (Read/Delete) -->
+		<section class="admin-section">
+			<h2>📂 내가 쓴 글 관리</h2>
+			<div class="post-list">
+				{manualPosts.results.map((post) => (
+					<div class="post-item">
+						<div class="post-info">
+							<strong>{post.title}</strong>
+							<span>{post.category} | {post.created_at}</span>
+						</div>
+						<div class="post-actions">
+							<button class="btn-delete" onclick={`deletePost(${post.id})`}>삭제</button>
+						</div>
+					</div>
+				))}
+			</div>
+		</section>
+	</div>
+
+	<script is:inline>
+		// 글 작성 핸들러
+		document.getElementById('postForm').addEventListener('submit', async (e) => {
+			e.preventDefault();
+			const formData = new FormData(e.target);
+			const data = Object.fromEntries(formData);
+
+			const res = await fetch('/api/posts', {
+				method: 'POST',
+				body: JSON.stringify(data),
+				headers: { 'Content-Type': 'application/json' }
+			});
+
+			if (res.ok) {
+				alert('글이 성공적으로 발행되었습니다!');
+				location.reload();
+			} else {
+				alert('발행 실패!');
+			}
+		});
+
+		// 글 삭제 핸들러
+		async function deletePost(id) {
+			if (!confirm('정말 삭제하시겠습니까?')) return;
+			
+			const res = await fetch('/api/posts', {
+				method: 'DELETE',
+				body: JSON.stringify({ id }),
+				headers: { 'Content-Type': 'application/json' }
+			});
+
+			if (res.ok) {
+				location.reload();
+			}
+		}
+	</script>
+</Layout>
+
+<style>
+	.admin-dashboard { max-width: 900px; margin: 0 auto; padding: 3rem 0; }
+	.admin-header { text-align: center; margin-bottom: 4rem; }
+	.stat-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem; margin-bottom: 3rem; }
+	.stat-card { background: #f8fafc; padding: 1.5rem; border-radius: 12px; text-align: center; border: 1px solid #e2e8f0; }
+	.stat-card .value { font-size: 2.5rem; font-weight: 800; color: #2563eb; }
+	
+	.admin-section { background: white; padding: 2rem; border-radius: 16px; border: 1px solid #e2e8f0; margin-bottom: 3rem; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05); }
+	.post-form { display: flex; flex-direction: column; gap: 1rem; }
+	.post-form input, .post-form textarea { padding: 0.8rem; border: 1px solid #e2e8f0; border-radius: 8px; font-family: inherit; }
+	.content-area { min-height: 300px; }
+	.btn-primary { background: #2563eb; color: white; padding: 1rem; border: none; border-radius: 8px; font-weight: 700; cursor: pointer; }
+	
+	.post-item { display: flex; justify-content: space-between; align-items: center; padding: 1rem 0; border-bottom: 1px solid #f1f5f9; }
+	.post-info { display: flex; flex-direction: column; }
+	.post-info span { font-size: 0.85rem; color: #64748b; }
+	.btn-delete { background: #fee2e2; color: #dc2626; border: none; padding: 0.5rem 1rem; border-radius: 6px; cursor: pointer; font-size: 0.85rem; }
+</style>

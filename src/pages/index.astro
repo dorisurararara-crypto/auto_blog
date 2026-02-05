@@ -2,15 +2,45 @@
 import Layout from '../layouts/Layout.astro';
 import { getCollection } from 'astro:content';
 
-const allPosts = await getCollection('blog');
-allPosts.sort((a, b) => b.id.localeCompare(a.id));
+// 1. 파일 기반 포스트 가져오기
+const filePosts = await getCollection('blog');
+const formattedFilePosts = filePosts.map(p => ({
+	id: p.id,
+	slug: `/blog/${p.slug}`,
+	title: p.data.title,
+	summary: p.data.summary,
+	image: p.data.image,
+	date: p.id.split('_')[0],
+	source: 'file'
+}));
+
+// 2. DB 기반 포스트 가져오기 (관리자 작성)
+let dbPosts = [];
+try {
+	const db = Astro.locals.runtime.env.DB;
+	const { results } = await db.prepare("SELECT * FROM manual_posts ORDER BY created_at DESC").all();
+	dbPosts = results.map(p => ({
+		id: `db_${p.id}`,
+		slug: `/manual/${p.id}`,
+		title: p.title,
+		summary: p.summary,
+		image: p.image_url || '/images/default-post.png',
+		date: p.created_at.split(' ')[0].replace(/-/g, ''),
+		source: 'db'
+	}));
+} catch (e) {
+	console.error("DB 로드 실패:", e);
+}
+
+// 3. 두 목록 합치기 및 최신순 정렬
+const allPosts = [...formattedFilePosts, ...dbPosts].sort((a, b) => b.date.localeCompare(a.date));
 ---
 
 <Layout title="GTB 매거진 - 트렌드의 최전선">
 	<div class="hero-section">
 		<div class="container">
-			<h2>지금 세계에서 가장 핫한 트렌드 🔥</h2>
-			<p>AI가 엄선하고 분석한 글로벌 인사이트를 만나보세요.</p>
+			<h2>매일 만나는 새로운 통찰 🔥</h2>
+			<p>글로벌 트렌드부터 IT, 건강까지 전문가의 시선으로 담아냅니다.</p>
 		</div>
 	</div>
 
@@ -18,16 +48,16 @@ allPosts.sort((a, b) => b.id.localeCompare(a.id));
 		<div class="grid">
 			{allPosts.map((post) => (
 				<article class="card">
-					<a href={`/blog/${post.slug}`}>
+					<a href={post.slug}>
 						<div class="card-image">
-							{post.data.image && <img src={post.data.image} alt={post.data.title} loading="lazy" />}
+							<img src={post.image} alt={post.title} loading="lazy" />
 						</div>
 						<div class="card-content">
 							<span class="tag">Trend</span>
-							<h3>{post.data.title}</h3>
-							<p class="summary">{post.data.summary}</p>
+							<h3>{post.title}</h3>
+							<p class="summary">{post.summary}</p>
 							<div class="card-footer">
-								<span class="date">{post.id.split('_')[0]}</span>
+								<span class="date">{post.date.replace(/(\d{4})(\d{2})(\d{2})/, '$1. $2. $3')}</span>
 								<span class="read-more">더 보기 →</span>
 							</div>
 						</div>
@@ -39,78 +69,18 @@ allPosts.sort((a, b) => b.id.localeCompare(a.id));
 </Layout>
 
 <style>
-	.hero-section {
-		background: white;
-		padding: 4rem 0;
-		text-align: center;
-		margin-bottom: 3rem;
-		border-bottom: 1px solid #e5e7eb;
-	}
-	.hero-section h2 { margin: 0 0 0.5rem; font-size: 2rem; letter-spacing: -1px; }
-	.hero-section p { color: #6b7280; font-size: 1.1rem; }
-
-	.grid {
-		display: grid;
-		grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
-		gap: 2rem;
-	}
-	.card {
-		background: white;
-		border-radius: 12px;
-		overflow: hidden;
-		box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
-		transition: transform 0.2s, box-shadow 0.2s;
-		border: 1px solid #f3f4f6;
-	}
-	.card:hover {
-		transform: translateY(-5px);
-		box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
-	}
-	.card-image {
-		aspect-ratio: 16/9;
-		overflow: hidden;
-		background: #e5e7eb;
-	}
-	.card-image img {
-		width: 100%;
-		height: 100%;
-		object-fit: cover;
-		transition: transform 0.3s;
-	}
-	.card:hover .card-image img { transform: scale(1.05); }
-	
+	.hero-section { background: white; padding: 4rem 0; text-align: center; margin-bottom: 3rem; border-bottom: 1px solid #f3f4f6; }
+	.hero-section h2 { font-size: 2.2rem; font-weight: 800; letter-spacing: -1.5px; margin-bottom: 0.5rem; }
+	.hero-section p { color: #64748b; font-size: 1.1rem; }
+	.grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 2rem; }
+	.card { background: white; border-radius: 16px; overflow: hidden; border: 1px solid #f1f5f9; transition: all 0.3s ease; }
+	.card:hover { transform: translateY(-8px); box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1); }
+	.card-image { aspect-ratio: 16/9; overflow: hidden; }
+	.card-image img { width: 100%; height: 100%; object-fit: cover; }
 	.card-content { padding: 1.5rem; }
-	.tag {
-		font-size: 0.75rem;
-		color: #2563eb;
-		font-weight: 700;
-		text-transform: uppercase;
-		letter-spacing: 0.5px;
-	}
-	.card h3 {
-		font-size: 1.25rem;
-		margin: 0.5rem 0 0.75rem;
-		line-height: 1.4;
-		word-break: keep-all;
-	}
-	.summary {
-		font-size: 0.95rem;
-		color: #4b5563;
-		line-height: 1.6;
-		display: -webkit-box;
-		-webkit-line-clamp: 2;
-		-webkit-box-orient: vertical;
-		overflow: hidden;
-		margin-bottom: 1.5rem;
-	}
-	.card-footer {
-		display: flex;
-		justify-content: space-between;
-		align-items: center;
-		font-size: 0.85rem;
-		color: #9ca3af;
-		border-top: 1px solid #f3f4f6;
-		padding-top: 1rem;
-	}
+	.tag { font-size: 0.75rem; color: #2563eb; font-weight: 700; margin-bottom: 0.5rem; display: block; }
+	.card h3 { font-size: 1.25rem; font-weight: 700; margin-bottom: 0.75rem; line-height: 1.4; }
+	.summary { font-size: 0.95rem; color: #475569; line-height: 1.6; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+	.card-footer { margin-top: 1.5rem; display: flex; justify-content: space-between; align-items: center; font-size: 0.85rem; color: #94a3b8; }
 	.read-more { color: #2563eb; font-weight: 600; }
 </style>
