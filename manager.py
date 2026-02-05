@@ -112,7 +112,9 @@ class GTBManager:
                 
                 os.makedirs("public/images", exist_ok=True)
                 if os.path.exists(f"data/images/{image_filename}"):
-                    os.rename(f"data/images/{image_filename}", f"public/images/{image_filename}")
+                    # Windows에서 대상 파일이 이미 존재할 경우 에러가 나지 않도록 os.replace 사용
+                    import shutil
+                    shutil.move(f"data/images/{image_filename}", f"public/images/{image_filename}")
                 
                 keywords_raw = parsed_data.get('keywords', "").replace("[", "").replace("]", "").split(",")
                 search_keyword = "인기상품"
