@@ -1,5 +1,5 @@
 ---
-const { title = "Global Trend Bridge" } = Astro.props;
+const { title = "GTB 매거진" } = Astro.props;
 ---
 
 <html lang="ko">
@@ -12,38 +12,34 @@ const { title = "Global Trend Bridge" } = Astro.props;
 		<link rel="stylesheet" as="style" crossorigin href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css" />
 		<style is:global>
 			:root {
-				--primary: #2563eb;
-				--text-main: #111827;
+				--primary: #111827;
+				--accent: #2563eb;
+				--text-main: #1f2937;
 				--text-sub: #6b7280;
-				--bg-body: #f3f4f6;
-				--bg-card: #ffffff;
+				--bg-body: #ffffff;
 			}
 			body {
-				font-family: 'Pretendard', -apple-system, BlinkMacSystemFont, system-ui, Roboto, sans-serif;
+				font-family: 'Pretendard', sans-serif;
 				background-color: var(--bg-body);
 				color: var(--text-main);
 				margin: 0;
 				line-height: 1.6;
-				-webkit-font-smoothing: antialiased;
 			}
 			* { box-sizing: border-box; }
-			a { text-decoration: none; color: inherit; transition: color 0.2s; }
+			a { text-decoration: none; color: inherit; }
 			
 			.container {
-				max-width: 1100px;
+				max-width: 1000px;
 				margin: 0 auto;
 				padding: 0 1.5rem;
 			}
 			
-			/* Header */
 			header {
-				background: rgba(255, 255, 255, 0.95);
-				backdrop-filter: blur(10px);
-				border-bottom: 1px solid #e5e7eb;
-				position: sticky;
-				top: 0;
-				z-index: 100;
-				padding: 1rem 0;
+				background: white;
+				border-bottom: 1px solid #f3f4f6;
+				padding: 1.5rem 0;
+				/* 스크롤 시 따라오지 않도록 설정 변경 */
+				position: relative; 
 			}
 			.header-inner {
 				display: flex;
@@ -51,27 +47,26 @@ const { title = "Global Trend Bridge" } = Astro.props;
 				align-items: center;
 			}
 			.logo {
-				font-size: 1.25rem;
-				font-weight: 800;
+				font-size: 1.5rem;
+				font-weight: 900;
 				color: var(--primary);
-				letter-spacing: -0.5px;
+				letter-spacing: -1px;
 			}
 			.nav-links a {
-				margin-left: 1.5rem;
-				font-weight: 500;
-				color: var(--text-sub);
+				margin-left: 2rem;
+				font-weight: 600;
+				color: var(--text-main);
+				font-size: 0.95rem;
 			}
-			.nav-links a:hover { color: var(--primary); }
+			.nav-links a:hover { color: var(--accent); }
 
-			/* Footer */
 			footer {
-				background: white;
-				border-top: 1px solid #e5e7eb;
-				padding: 3rem 0;
-				margin-top: 4rem;
+				border-top: 1px solid #f3f4f6;
+				padding: 4rem 0;
+				margin-top: 5rem;
 				text-align: center;
 				color: var(--text-sub);
-				font-size: 0.9rem;
+				font-size: 0.85rem;
 			}
 		</style>
 	</head>
@@ -81,9 +76,9 @@ const { title = "Global Trend Bridge" } = Astro.props;
 				<a href="/" class="logo">GTB 매거진</a>
 				<nav class="nav-links">
 					<a href="/">홈</a>
-					<a href="#">인기글</a>
-					<a href="#">IT/테크</a>
-					<a href="#">건강</a>
+					<a href="/category/IT테크">IT·테크</a>
+					<a href="/category/건강">건강</a>
+					<a href="/category/라이프">라이프</a>
 				</nav>
 			</div>
 		</header>
@@ -91,7 +86,7 @@ const { title = "Global Trend Bridge" } = Astro.props;
 			<slot />
 		</main>
 		<footer>
-			<p>Global Trend Bridge &copy; 2026. All rights reserved.</p>
+			<p>GTB 매거진 &copy; 2026. 모든 글의 저작권은 GTB에 있습니다.</p>
 		</footer>
 	</body>
 </html>
