@@ -89,8 +89,8 @@ class GTBManager:
         today_str = datetime.now().strftime("%Y%m%d")
 
         for sub in self.target_subreddits:
-            # 상위 3개까지 가져와서 중복되지 않은 가장 최신 글 하나를 선택
-            posts = self.collector.fetch_top_posts(sub, limit=3)
+            # 상위 5개까지 가져와서 중복되지 않은 가장 최신 글 하나를 선택
+            posts = self.collector.fetch_top_posts(sub, limit=5)
             category_name = self.category_map.get(sub, "인사이트")
             
             published_in_sub = False
