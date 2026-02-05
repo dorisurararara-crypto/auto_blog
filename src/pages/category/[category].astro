@@ -1,0 +1,59 @@
+---
+import Layout from '../../layouts/Layout.astro';
+import { getCollection } from 'astro:content';
+
+export async function getStaticPaths() {
+  const allPosts = await getCollection('blog');
+  const uniqueCategories = [...new Set(allPosts.map((post) => post.data.category).filter(Boolean))];
+  
+  return uniqueCategories.map((category) => ({
+    params: { category },
+    props: { posts: allPosts.filter((post) => post.data.category === category) },
+  }));
+}
+
+const { category } = Astro.params;
+const { posts } = Astro.props;
+posts.sort((a, b) => b.id.localeCompare(a.id));
+---
+
+<Layout title={`${category} - GTB 매거진`}>
+	<div class="category-header">
+		<div class="container">
+			<h2>{category}</h2>
+			<p>총 {posts.length}개의 이야기가 있습니다.</p>
+		</div>
+	</div>
+
+	<div class="container">
+		<div class="grid">
+			{posts.map((post) => (
+				<article class="card">
+					<a href={`/blog/${post.slug}`}>
+						<div class="card-image">
+							{post.data.image && <img src={post.data.image} alt={post.data.title} />}
+						</div>
+						<div class="card-content">
+							<h3>{post.data.title}</h3>
+							<p class="summary">{post.data.summary}</p>
+							<div class="card-footer">
+								<span class="date">{post.id.split('_')[0]}</span>
+							</div>
+						</div>
+					</a>
+				</article>
+			))}
+		</div>
+	</div>
+</Layout>
+
+<style>
+	.category-header { background: #f9fafb; padding: 4rem 0; text-align: center; margin-bottom: 3rem; }
+	.category-header h2 { font-size: 2.5rem; margin: 0; }
+	.grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 2rem; }
+	.card { background: white; border-radius: 12px; overflow: hidden; border: 1px solid #f3f4f6; }
+	.card-image { aspect-ratio: 16/9; overflow: hidden; }
+	.card-image img { width: 100%; height: 100%; object-fit: cover; }
+	.card-content { padding: 1.5rem; }
+	.summary { font-size: 0.95rem; color: #4b5563; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+</style>
