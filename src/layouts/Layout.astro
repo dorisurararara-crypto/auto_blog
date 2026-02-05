@@ -37,14 +37,76 @@ const siteName = "GTB 매거진";
 
 		<link rel="stylesheet" as="style" crossorigin href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css" />
 		<style is:global>
-			:root { --primary: #111827; --accent: #2563eb; --text-main: #1f2937; --text-sub: #6b7280; --bg-body: #ffffff; }
-			body { font-family: 'Pretendard', sans-serif; background-color: var(--bg-body); color: var(--text-main); margin: 0; line-height: 1.6; }
-			.container { max-width: 1000px; margin: 0 auto; padding: 0 1.5rem; }
-			header { background: white; border-bottom: 1px solid #f3f4f6; padding: 1.5rem 0; position: relative; }
-			.header-inner { display: flex; justify-content: space-between; align-items: center; }
-			.logo { font-size: 1.5rem; font-weight: 900; color: var(--primary); letter-spacing: -1px; }
-			.nav-links a { margin-left: 2rem; font-weight: 600; color: var(--text-main); }
-			footer { border-top: 1px solid #f3f4f6; padding: 4rem 0; margin-top: 5rem; text-align: center; }
+			:root { 
+				--primary: #111827; 
+				--accent: #2563eb; 
+				--text-main: #1f2937; 
+				--text-sub: #6b7280; 
+				--bg-body: #ffffff; 
+				--bg-soft: #f9fafb;
+			}
+			* { box-sizing: border-box; }
+			body { 
+				font-family: 'Pretendard', sans-serif; 
+				background-color: var(--bg-body); 
+				color: var(--text-main); 
+				margin: 0; 
+				line-height: 1.7;
+				word-break: keep-all;
+				-webkit-font-smoothing: antialiased;
+			}
+			.container { 
+				max-width: 1000px; 
+				margin: 0 auto; 
+				padding: 0 1.25rem; 
+			}
+			header { 
+				background: white; 
+				border-bottom: 1px solid #f3f4f6; 
+				padding: 1rem 0; 
+				position: sticky;
+				top: 0;
+				z-index: 100;
+				backdrop-filter: blur(10px);
+				background: rgba(255, 255, 255, 0.9);
+			}
+			.header-inner { 
+				display: flex; 
+				flex-direction: column;
+				align-items: center; 
+				gap: 0.75rem;
+			}
+			@media (min-width: 640px) {
+				.header-inner { flex-direction: row; justify-content: space-between; }
+			}
+			.logo { 
+				font-size: 1.4rem; 
+				font-weight: 900; 
+				color: var(--primary); 
+				letter-spacing: -1px; 
+				text-decoration: none;
+			}
+			.nav-links {
+				display: flex;
+				gap: 1.25rem;
+				overflow-x: auto;
+				width: 100%;
+				justify-content: center;
+				padding: 0.25rem 0;
+				-webkit-overflow-scrolling: touch;
+				scrollbar-width: none;
+			}
+			.nav-links::-webkit-scrollbar { display: none; }
+			.nav-links a { 
+				font-weight: 700; 
+				color: var(--text-main); 
+				text-decoration: none;
+				font-size: 0.95rem;
+				white-space: nowrap;
+			}
+			.nav-links a:active { color: var(--accent); }
+			
+			footer { border-top: 1px solid #f3f4f6; padding: 3rem 0; margin-top: 4rem; text-align: center; color: var(--text-sub); font-size: 0.9rem; }
 		</style>
 	</head>
 	<body>
