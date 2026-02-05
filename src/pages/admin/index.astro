@@ -9,120 +9,90 @@ if (auth !== '1234') {
 
 const db = Astro.locals.runtime.env.DB;
 
-// 1. 통계 데이터
+// 1. 전체 요약 통계
 const totalVisits = await db.prepare("SELECT COUNT(*) as count FROM stats WHERE type = 'visit'").first('count');
 const coupangClicks = await db.prepare("SELECT COUNT(*) as count FROM stats WHERE type = 'click'").first('count');
 
-// 2. 직접 작성한 글 목록 (CRUD용)
-const manualPosts = await db.prepare("SELECT * FROM manual_posts ORDER BY created_at DESC").all();
+// 2. 개별 글별 상세 통계 (조회수 높은 순)
+const postStats = await db.prepare(`
+    SELECT 
+        path, 
+        COUNT(CASE WHEN type = 'visit' THEN 1 END) as visits,
+        COUNT(CASE WHEN type = 'click' THEN 1 END) as clicks
+    FROM stats 
+    WHERE path LIKE '/blog/%' OR path LIKE '/manual/%'
+    GROUP BY path 
+    ORDER BY visits DESC
+`).all();
 ---
 
 <Layout title="GTB 매거진 - 통합 관리자">
 	<div class="admin-dashboard">
 		<header class="admin-header">
-			<h1>👑 GTB 매거진 통합 컨트롤러</h1>
-			<p>통계 확인부터 글 작성까지 한 곳에서 관리하세요.</p>
+			<h1>👑 GTB 매거진 데이터 센터</h1>
+			<p>어떤 글이 인기가 많은지 실시간으로 확인하세요.</p>
 		</header>
 
 		<!-- 상단 요약 통계 -->
 		<section class="stat-grid">
 			<div class="stat-card">
-				<span class="label">총 방문자</span>
+				<span class="label">누적 총 방문</span>
 				<span class="value">{totalVisits}</span>
 			</div>
 			<div class="stat-card">
-				<span class="label">쿠팡 클릭</span>
+				<span class="label">누적 쿠팡 클릭</span>
 				<span class="value">{coupangClicks}</span>
 			</div>
 		</section>
 
-		<!-- 글 작성 섹션 (Create) -->
+		<!-- 글별 상세 통계 섹션 -->
 		<section class="admin-section">
-			<div class="section-header">
-				<h2>📝 직접 글쓰기</h2>
-			</div>
-			<form id="postForm" class="post-form">
-				<input type="text" name="title" placeholder="제목을 입력하세요" required />
-				<input type="text" name="category" placeholder="카테고리 (IT테크, 건강, 라이프)" required />
-				<input type="text" name="imageUrl" placeholder="썸네일 이미지 URL" />
-				<textarea name="summary" placeholder="짧은 요약 문구"></textarea>
-				<textarea name="content" placeholder="본문 내용을 입력하세요 (마크다운 지원)" class="content-area" required></textarea>
-				<button type="submit" class="btn-primary">포스팅 발행하기</button>
-			</form>
-		</section>
-
-		<!-- 글 목록 섹션 (Read/Delete) -->
-		<section class="admin-section">
-			<h2>📂 내가 쓴 글 관리</h2>
-			<div class="post-list">
-				{manualPosts.results.map((post) => (
-					<div class="post-item">
-						<div class="post-info">
-							<strong>{post.title}</strong>
-							<span>{post.category} | {post.created_at}</span>
-						</div>
-						<div class="post-actions">
-							<button class="btn-delete" onclick={`deletePost(${post.id})`}>삭제</button>
-						</div>
-					</div>
-				))}
+			<h2>📊 콘텐츠별 성과 리포트</h2>
+			<div class="stats-table-wrapper">
+				<table class="stats-table">
+					<thead>
+						<tr>
+							<th>콘텐츠 경로</th>
+							<th>조회수</th>
+							<th>쿠팡 클릭</th>
+							<th>클릭률(CTR)</th>
+						</tr>
+					</thead>
+					<tbody>
+						{postStats.results.map((stat) => (
+							<tr>
+								<td class="path-cell"><a href={stat.path} target="_blank">{stat.path}</a></td>
+								<td class="num-cell">{stat.visits}회</td>
+								<td class="num-cell">{stat.clicks}회</td>
+								<td class="num-cell">
+									{stat.visits > 0 ? ((stat.clicks / stat.visits) * 100).toFixed(1) : 0}%
+								</td>
+							</tr>
+						))}
+					</tbody>
+				</table>
 			</div>
 		</section>
 	</div>
-
-	<script is:inline>
-		// 글 작성 핸들러
-		document.getElementById('postForm').addEventListener('submit', async (e) => {
-			e.preventDefault();
-			const formData = new FormData(e.target);
-			const data = Object.fromEntries(formData);
-
-			const res = await fetch('/api/posts', {
-				method: 'POST',
-				body: JSON.stringify(data),
-				headers: { 'Content-Type': 'application/json' }
-			});
-
-			if (res.ok) {
-				alert('글이 성공적으로 발행되었습니다!');
-				location.reload();
-			} else {
-				alert('발행 실패!');
-			}
-		});
-
-		// 글 삭제 핸들러
-		async function deletePost(id) {
-			if (!confirm('정말 삭제하시겠습니까?')) return;
-			
-			const res = await fetch('/api/posts', {
-				method: 'DELETE',
-				body: JSON.stringify({ id }),
-				headers: { 'Content-Type': 'application/json' }
-			});
-
-			if (res.ok) {
-				location.reload();
-			}
-		}
-	</script>
 </Layout>
 
 <style>
-	.admin-dashboard { max-width: 900px; margin: 0 auto; padding: 3rem 0; }
+	.admin-dashboard { max-width: 1000px; margin: 0 auto; padding: 3rem 0; }
 	.admin-header { text-align: center; margin-bottom: 4rem; }
 	.stat-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem; margin-bottom: 3rem; }
-	.stat-card { background: #f8fafc; padding: 1.5rem; border-radius: 12px; text-align: center; border: 1px solid #e2e8f0; }
-	.stat-card .value { font-size: 2.5rem; font-weight: 800; color: #2563eb; }
+	.stat-card { background: white; padding: 2rem; border-radius: 16px; text-align: center; border: 1px solid #e2e8f0; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05); }
+	.stat-card .label { display: block; color: #64748b; font-weight: 600; margin-bottom: 0.5rem; }
+	.stat-card .value { font-size: 3rem; font-weight: 900; color: #2563eb; }
 	
-	.admin-section { background: white; padding: 2rem; border-radius: 16px; border: 1px solid #e2e8f0; margin-bottom: 3rem; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05); }
-	.post-form { display: flex; flex-direction: column; gap: 1rem; }
-	.post-form input, .post-form textarea { padding: 0.8rem; border: 1px solid #e2e8f0; border-radius: 8px; font-family: inherit; }
-	.content-area { min-height: 300px; }
-	.btn-primary { background: #2563eb; color: white; padding: 1rem; border: none; border-radius: 8px; font-weight: 700; cursor: pointer; }
-	
-	.post-item { display: flex; justify-content: space-between; align-items: center; padding: 1rem 0; border-bottom: 1px solid #f1f5f9; }
-	.post-info { display: flex; flex-direction: column; }
-	.post-info span { font-size: 0.85rem; color: #64748b; }
-	.btn-delete { background: #fee2e2; color: #dc2626; border: none; padding: 0.5rem 1rem; border-radius: 6px; cursor: pointer; font-size: 0.85rem; }
+	.admin-section { background: white; padding: 2rem; border-radius: 16px; border: 1px solid #e2e8f0; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05); }
+	.admin-section h2 { margin-bottom: 1.5rem; font-size: 1.25rem; }
+
+	.stats-table-wrapper { overflow-x: auto; }
+	.stats-table { width: 100%; border-collapse: collapse; text-align: left; }
+	.stats-table th { padding: 1rem; border-bottom: 2px solid #f1f5f9; color: #64748b; font-size: 0.9rem; }
+	.stats-table td { padding: 1rem; border-bottom: 1px solid #f1f5f9; vertical-align: middle; }
+	.path-cell { font-family: monospace; font-size: 0.9rem; max-width: 400px; overflow: hidden; text-overflow: ellipsis; }
+	.path-cell a { color: #2563eb; text-decoration: none; }
+	.path-cell a:hover { text-decoration: underline; }
+	.num-cell { font-weight: 600; text-align: right; }
 </style>
