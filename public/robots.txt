@@ -1,0 +1,3 @@
+User-agent: *
+Allow: /
+Sitemap: https://auto-blogs-7i9.pages.dev/sitemap-index.xml
