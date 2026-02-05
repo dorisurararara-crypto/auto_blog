@@ -153,7 +153,7 @@ class GTBManager:
                     f.write(sql)
                 
                 # D1 실행
-                os.system(f"npx wrangler d1 execute {db_name} --remote --file=temp.sql")
+                os.system(f"npx wrangler d1 execute {db_name} --remote --file=temp.sql --yes")
                 os.remove("temp.sql")
 
                 self.mark_as_processed(post['id'], parsed_data.get('title'), f"db://{slug}")
