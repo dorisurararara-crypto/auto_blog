@@ -1,39 +1,23 @@
 ---
 import Layout from '../layouts/Layout.astro';
-import { getCollection } from 'astro:content';
 
-// 1. 파일 기반 포스트 가져오기
-const filePosts = await getCollection('blog');
-const formattedFilePosts = filePosts.map(p => ({
-	id: p.id,
-	slug: `/blog/${p.slug}`,
-	title: p.data.title,
-	summary: p.data.summary,
-	image: p.data.image,
-	date: p.id.split('_')[0],
-	source: 'file'
-}));
-
-// 2. DB 기반 포스트 가져오기 (관리자 작성)
-let dbPosts = [];
+// DB 기반 포스트 가져오기
+let allPosts = [];
 try {
 	const db = Astro.locals.runtime.env.DB;
-	const { results } = await db.prepare("SELECT * FROM manual_posts ORDER BY created_at DESC").all();
-	dbPosts = results.map(p => ({
-		id: `db_${p.id}`,
-		slug: `/manual/${p.id}`,
+	const { results } = await db.prepare("SELECT * FROM posts ORDER BY created_at DESC").all();
+	allPosts = results.map(p => ({
+		id: p.id,
+		slug: `/blog/${p.slug}`,
 		title: p.title,
 		summary: p.summary,
 		image: p.image_url || '/images/default-post.png',
-		date: p.created_at.split(' ')[0].replace(/-/g, ''),
-		source: 'db'
+		date: p.created_at ? p.created_at.split(' ')[0].replace(/-/g, '') : '',
+		category: p.category || 'Trend'
 	}));
 } catch (e) {
 	console.error("DB 로드 실패:", e);
 }
-
-// 3. 두 목록 합치기 및 최신순 정렬
-const allPosts = [...formattedFilePosts, ...dbPosts].sort((a, b) => b.date.localeCompare(a.date));
 ---
 
 <Layout title="GTB 매거진 - 트렌드의 최전선">
@@ -53,7 +37,7 @@ const allPosts = [...formattedFilePosts, ...dbPosts].sort((a, b) => b.date.local
 							<img src={post.image} alt={post.title} loading="lazy" />
 						</div>
 						<div class="card-content">
-							<span class="tag">Trend</span>
+							<span class="tag">{post.category}</span>
 							<h3>{post.title}</h3>
 							<p class="summary">{post.summary}</p>
 							<div class="card-footer">

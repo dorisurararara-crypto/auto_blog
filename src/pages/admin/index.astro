@@ -13,24 +13,28 @@ const db = Astro.locals.runtime.env.DB;
 const totalVisits = await db.prepare("SELECT COUNT(*) as count FROM stats WHERE type = 'visit'").first('count');
 const coupangClicks = await db.prepare("SELECT COUNT(*) as count FROM stats WHERE type = 'click'").first('count');
 
-// 2. 개별 글별 상세 통계 (조회수 높은 순)
+// 2. 개별 글별 상세 통계 및 관리 기능
 const postStats = await db.prepare(`
     SELECT 
-        path, 
-        COUNT(CASE WHEN type = 'visit' THEN 1 END) as visits,
-        COUNT(CASE WHEN type = 'click' THEN 1 END) as clicks
-    FROM stats 
-    WHERE path LIKE '/blog/%' OR path LIKE '/manual/%'
-    GROUP BY path 
-    ORDER BY visits DESC
+        p.id,
+        p.slug,
+        p.title,
+        p.category,
+        p.created_at,
+        COUNT(CASE WHEN s.type = 'visit' THEN 1 END) as visits,
+        COUNT(CASE WHEN s.type = 'click' THEN 1 END) as clicks
+    FROM posts p
+    LEFT JOIN stats s ON s.path = '/blog/' || p.slug
+    GROUP BY p.id
+    ORDER BY p.created_at DESC
 `).all();
 ---
 
-<Layout title="GTB 매거진 - 통합 관리자">
+<Layout title="GTB 매거진 - 통합 관리">
 	<div class="admin-dashboard">
 		<header class="admin-header">
-			<h1>👑 GTB 매거진 데이터 센터</h1>
-			<p>어떤 글이 인기가 많은지 실시간으로 확인하세요.</p>
+			<h1>👑 GTB 매거진 콘텐츠 센터</h1>
+			<p>데이터 확인 및 포스팅 관리를 한 곳에서 처리하세요.</p>
 		</header>
 
 		<!-- 상단 요약 통계 -->
@@ -45,27 +49,34 @@ const postStats = await db.prepare(`
 			</div>
 		</section>
 
-		<!-- 글별 상세 통계 섹션 -->
+		<!-- 글별 상세 통계 및 관리 섹션 -->
 		<section class="admin-section">
-			<h2>📊 콘텐츠별 성과 리포트</h2>
+			<h2>📂 전체 콘텐츠 관리 ({postStats.results.length}개)</h2>
 			<div class="stats-table-wrapper">
 				<table class="stats-table">
 					<thead>
 						<tr>
-							<th>콘텐츠 경로</th>
+							<th>제목 / 카테고리</th>
 							<th>조회수</th>
-							<th>쿠팡 클릭</th>
-							<th>클릭률(CTR)</th>
+							<th>클릭(CTR)</th>
+							<th>작성일</th>
+							<th>관리</th>
 						</tr>
 					</thead>
 					<tbody>
-						{postStats.results.map((stat) => (
+						{postStats.results.map((post) => (
 							<tr>
-								<td class="path-cell"><a href={stat.path} target="_blank">{stat.path}</a></td>
-								<td class="num-cell">{stat.visits}회</td>
-								<td class="num-cell">{stat.clicks}회</td>
+								<td class="info-cell">
+									<a href={`/blog/${post.slug}`} target="_blank" class="post-title">{post.title}</a>
+									<span class="post-category">{post.category}</span>
+								</td>
+								<td class="num-cell">{post.visits}회</td>
 								<td class="num-cell">
-									{stat.visits > 0 ? ((stat.clicks / stat.visits) * 100).toFixed(1) : 0}%
+									{post.visits > 0 ? ((post.clicks / post.visits) * 100).toFixed(1) : 0}%
+								</td>
+								<td class="date-cell">{post.created_at?.split(' ')[0]}</td>
+								<td class="action-cell">
+									<button class="btn-delete" onclick={`deletePost(${post.id})`}>삭제</button>
 								</td>
 							</tr>
 						))}
@@ -74,10 +85,29 @@ const postStats = await db.prepare(`
 			</div>
 		</section>
 	</div>
+
+	<script is:inline>
+		async function deletePost(id) {
+			if (!confirm('이 글을 영구적으로 삭제하시겠습니까? (복구 불가능)')) return;
+			
+			const res = await fetch('/api/posts', {
+				method: 'DELETE',
+				body: JSON.stringify({ id }),
+				headers: { 'Content-Type': 'application/json' }
+			});
+
+			if (res.ok) {
+				alert('삭제되었습니다.');
+				location.reload();
+			} else {
+				alert('삭제 실패! 다시 시도해 주세요.');
+			}
+		}
+	</script>
 </Layout>
 
 <style>
-	.admin-dashboard { max-width: 1000px; margin: 0 auto; padding: 3rem 0; }
+	.admin-dashboard { max-width: 1100px; margin: 0 auto; padding: 3rem 0; }
 	.admin-header { text-align: center; margin-bottom: 4rem; }
 	.stat-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem; margin-bottom: 3rem; }
 	.stat-card { background: white; padding: 2rem; border-radius: 16px; text-align: center; border: 1px solid #e2e8f0; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05); }
@@ -89,10 +119,16 @@ const postStats = await db.prepare(`
 
 	.stats-table-wrapper { overflow-x: auto; }
 	.stats-table { width: 100%; border-collapse: collapse; text-align: left; }
-	.stats-table th { padding: 1rem; border-bottom: 2px solid #f1f5f9; color: #64748b; font-size: 0.9rem; }
-	.stats-table td { padding: 1rem; border-bottom: 1px solid #f1f5f9; vertical-align: middle; }
-	.path-cell { font-family: monospace; font-size: 0.9rem; max-width: 400px; overflow: hidden; text-overflow: ellipsis; }
-	.path-cell a { color: #2563eb; text-decoration: none; }
-	.path-cell a:hover { text-decoration: underline; }
-	.num-cell { font-weight: 600; text-align: right; }
+	.stats-table th { padding: 1rem; border-bottom: 2px solid #f1f5f9; color: #64748b; font-size: 0.85rem; text-transform: uppercase; }
+	.stats-table td { padding: 1.2rem 1rem; border-bottom: 1px solid #f1f5f9; vertical-align: middle; }
+	
+	.info-cell { max-width: 350px; }
+	.post-title { display: block; font-weight: 700; color: #1e293b; text-decoration: none; margin-bottom: 0.25rem; line-height: 1.4; }
+	.post-title:hover { color: #2563eb; }
+	.post-category { font-size: 0.75rem; color: #64748b; background: #f1f5f9; padding: 0.1rem 0.5rem; border-radius: 4px; }
+	
+	.num-cell { font-weight: 600; text-align: center; font-variant-numeric: tabular-nums; }
+	.date-cell { font-size: 0.85rem; color: #64748b; white-space: nowrap; }
+	.btn-delete { background: #fee2e2; color: #dc2626; border: none; padding: 0.5rem 0.8rem; border-radius: 6px; cursor: pointer; font-size: 0.8rem; font-weight: 600; }
+	.btn-delete:hover { background: #fecaca; }
 </style>

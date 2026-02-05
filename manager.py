@@ -123,37 +123,42 @@ class GTBManager:
                     fallback_kw = " ".join(parsed_data.get('title', '').split()[:2])
                     coupang_items = self.affiliate.search_products(fallback_kw, limit=3)
 
-                # [안전 로직] YAML 에러 방지를 위해 큰따옴표를 작은따옴표로 변환
-                safe_title_front = parsed_data.get('title', 'no_title').replace('"', "'")
-                safe_summary_front = parsed_data.get('summary', '').replace('"', "'")
+                # [DB 저장 로직] 파일을 만드는 대신 Cloudflare D1에 직접 INSERT
+                safe_title = parsed_data.get('title', 'no_title').replace("'", "''")
+                safe_summary = parsed_data.get('summary', '').replace("'", "''")
+                # 본문 마크다운 결합
+                full_content = f"## 💡 핵심 요약\n{parsed_data.get('summary')}\n\n{parsed_data.get('content')}"
+                if coupang_items:
+                    full_content += "\n\n---\n### 🛒 추천 상품\n"
+                    for item in coupang_items:
+                        full_content += f"- **[{item['name']}]({item['link']})** ({item['price']}원)\n"
+                    full_content += "\n*쿠팡 파트너스 활동의 일환으로 수수료를 제공받습니다.*\n"
+                
+                safe_content = full_content.replace("'", "''")
+                slug = f"{today_str}-{post['id']}"
+                image_url = f"/images/{image_filename}"
+                
+                print(f"[*] DB에 포스팅 저장 중: {safe_title}")
+                
+                # Cloudflare D1에 데이터 삽입 (Wrangler 사용)
+                # D1 데이터베이스 이름을 확인해야 함 (기본적으로 'gtb-db' 또는 프로젝트 설정에 따름)
+                db_name = "gtb-db" # 실제 D1 데이터베이스 이름으로 확인 필요
+                sql = f"INSERT INTO posts (slug, title, summary, content, category, image_url) VALUES ('{slug}', '{safe_title}', '{safe_summary}', '{safe_content}', '{category_name}', '{image_url}');"
+                
+                # 임시 SQL 파일 생성
+                with open("temp.sql", "w", encoding="utf-8") as f:
+                    f.write(sql)
+                
+                # D1 실행 (원격 배포된 DB에 즉시 반영)
+                os.system(f"npx wrangler d1 execute {db_name} --remote --file=temp.sql")
+                os.remove("temp.sql")
 
-                safe_filename = self.sanitize_filename(parsed_data.get('title', 'no_title'))
-                final_filename = f"{today_str}_{safe_filename}.md"
-                final_post_path = f"src/content/blog/{final_filename}"
-                os.makedirs("src/content/blog", exist_ok=True)
+                self.mark_as_processed(post['id'], parsed_data.get('title'), f"db://{slug}")
+                print(f"[+++] DB 발행 완료: {slug}")
                 
-                with open(final_post_path, "w", encoding="utf-8") as f:
-                    f.write("---\n")
-                    f.write(f"title: \"{safe_title_front}\"\n")
-                    f.write(f"summary: \"{safe_summary_front}\"\n")
-                    f.write(f"image: \"/images/{image_filename}\"\n")
-                    f.write(f"category: \"{category_name}\"\n")
-                    f.write("---\n\n")
-                    
-                    f.write(f"## 💡 핵심 요약\n{parsed_data.get('summary')}\n\n")
-                    f.write(f"{parsed_data.get('content')}\n\n")
-                    
-                    if coupang_items:
-                        f.write("\n---\n### 🛒 추천 상품\n")
-                        for item in coupang_items:
-                            f.write(f"- **[{item['name']}]({item['link']})** ({item['price']}원)\n")
-                        f.write("\n*쿠팡 파트너스 활동의 일환으로 수수료를 제공받습니다.*\n")
-                
-                self.mark_as_processed(post['id'], parsed_data.get('title'), final_post_path)
-                print(f"[+++] 발행 완료: {final_post_path}")
-                
-                os.system("git add .")
-                os.system(f"git commit -m \"Post: {safe_title_front}\"")
+                # 이미지 파일은 여전히 깃허브에 올려야 함 (public/images)
+                os.system("git add public/images/*")
+                os.system(f"git commit -m \"Image: {image_filename}\"")
                 os.system("git push origin main")
                 time.sleep(5)
 

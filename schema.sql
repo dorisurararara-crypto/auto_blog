@@ -7,9 +7,10 @@ CREATE TABLE IF NOT EXISTS stats (
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP
 );
 
--- 직접 작성하는 블로그 포스트 테이블
-CREATE TABLE IF NOT EXISTS manual_posts (
+-- 블로그 포스트 테이블 (통합)
+CREATE TABLE IF NOT EXISTS posts (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
+    slug TEXT UNIQUE NOT NULL,
     title TEXT NOT NULL,
     summary TEXT,
     content TEXT NOT NULL,
