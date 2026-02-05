@@ -89,13 +89,17 @@ class GTBManager:
         today_str = datetime.now().strftime("%Y%m%d")
 
         for sub in self.target_subreddits:
-            posts = self.collector.fetch_top_posts(sub, limit=1)
+            # 상위 3개까지 가져와서 중복되지 않은 가장 최신 글 하나를 선택
+            posts = self.collector.fetch_top_posts(sub, limit=3)
             category_name = self.category_map.get(sub, "인사이트")
             
+            published_in_sub = False
             for post in posts:
                 if self.is_already_processed(post['id']):
+                    print(f"[-] 중복 건너뛰기 ({sub}): {post['title'][:30]}...")
                     continue
 
+                print(f"[*] 새 콘텐츠 발견! ({sub}): {post['title'][:30]}...")
                 search_query = " ".join(post['title'].split()[:3])
                 korean_trends = self.searcher.search_korean_trends(search_query)
                 processed_text = self.processor.process_post(post, korean_trends=korean_trends)
@@ -159,7 +163,13 @@ class GTBManager:
                 os.system("git add public/images/*")
                 os.system(f"git commit -m \"Image: {image_filename}\"")
                 os.system("git push origin main")
+                
+                published_in_sub = True
                 time.sleep(5)
+                break # 한 개의 글을 발행했으면 다음 카테고리로 이동
+
+            if not published_in_sub:
+                print(f"[-] {sub} 카테고리에 새로 발행할 수 있는 글이 없습니다.")
 
         print("\n" + "="*60)
         print("✅ 모든 작업 완료.")
