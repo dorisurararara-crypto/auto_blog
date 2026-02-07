@@ -129,12 +129,12 @@ const siteName = "GTB 매거진";
 			<p>GTB 매거진 &copy; 2026. All rights reserved.</p>
 		</footer>
 
-		<!-- 실시간 트래킹 스크립트 -->
 		<script>
 			// 1. 페이지 방문 기록
+			const currentPath = window.location.pathname.replace(/\/$/, '') || '/';
 			fetch('/api/track', {
 				method: 'POST',
-				body: JSON.stringify({ type: 'visit', path: window.location.pathname }),
+				body: JSON.stringify({ type: 'visit', path: currentPath }),
 				headers: { 'Content-Type': 'application/json' }
 			});
 
@@ -146,7 +146,7 @@ const siteName = "GTB 매거진";
 						method: 'POST',
 						body: JSON.stringify({ 
 							type: 'click', 
-							path: window.location.pathname, 
+							path: currentPath, 
 							label: link.innerText.trim() 
 						}),
 						headers: { 'Content-Type': 'application/json' }
