@@ -136,7 +136,9 @@ const siteName = "GTB 매거진";
 				method: 'POST',
 				body: JSON.stringify({ type: 'visit', path: currentPath }),
 				headers: { 'Content-Type': 'application/json' }
-			});
+			}).then(res => {
+				if(!res.ok) console.error('Tracking failed:', res.status);
+			}).catch(err => console.error('Tracking error:', err));
 
 			// 2. 쿠팡 링크 클릭 기록
 			document.addEventListener('click', (e) => {

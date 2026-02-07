@@ -10,11 +10,14 @@ if (auth !== '1234') {
 const db = Astro.locals.runtime.env.DB;
 
 // 1. 전체 요약 통계
-const totalVisits = await db.prepare("SELECT COUNT(*) as count FROM stats WHERE type = 'visit'").first('count');
-const coupangClicks = await db.prepare("SELECT COUNT(*) as count FROM stats WHERE type = 'click'").first('count');
+const totalVisitsResult = await db.prepare("SELECT COUNT(*) as count FROM stats WHERE type = 'visit'").first();
+const totalVisits = totalVisitsResult ? totalVisitsResult.count : 0;
+
+const coupangClicksResult = await db.prepare("SELECT COUNT(*) as count FROM stats WHERE type = 'click'").first();
+const coupangClicks = coupangClicksResult ? coupangClicksResult.count : 0;
 
 // 2. 개별 글별 상세 통계 및 관리 기능
-const postStats = await db.prepare(`
+const postStatsResult = await db.prepare(`
     SELECT 
         p.id,
         p.slug,
@@ -28,6 +31,8 @@ const postStats = await db.prepare(`
     GROUP BY p.id
     ORDER BY p.created_at DESC
 `).all();
+
+const posts = postStatsResult.results || [];
 ---
 
 <Layout title="GTB 매거진 - 통합 관리">
@@ -51,7 +56,7 @@ const postStats = await db.prepare(`
 
 		<!-- 글별 상세 통계 및 관리 섹션 -->
 		<section class="admin-section">
-			<h2>📂 전체 콘텐츠 관리 ({postStats.results.length}개)</h2>
+			<h2>📂 전체 콘텐츠 관리 ({posts.length}개)</h2>
 			<div class="stats-table-wrapper">
 				<table class="stats-table">
 					<thead>
@@ -64,17 +69,17 @@ const postStats = await db.prepare(`
 						</tr>
 					</thead>
 					<tbody>
-						{postStats.results.map((post) => (
+						{posts.map((post) => (
 							<tr>
 								<td class="info-cell">
 									<a href={`/blog/${post.slug}`} target="_blank" class="post-title">{post.title}</a>
 									<span class="post-category">{post.category}</span>
 								</td>
-								<td class="num-cell">{post.visits}회</td>
+								<td class="num-cell">{post.visits || 0}회</td>
 								<td class="num-cell">
-									{post.visits > 0 ? ((post.clicks / post.visits) * 100).toFixed(1) : 0}%
+									{post.visits > 0 ? (((post.clicks || 0) / post.visits) * 100).toFixed(1) : 0}%
 								</td>
-								<td class="date-cell">{post.created_at?.split(' ')[0]}</td>
+								<td class="date-cell">{post.created_at ? post.created_at.split(' ')[0] : '-'}</td>
 								<td class="action-cell">
 									<button class="btn-delete" onclick={`deletePost(${post.id})`}>삭제</button>
 								</td>
