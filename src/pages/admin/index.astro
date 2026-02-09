@@ -10,7 +10,7 @@ if (auth !== '1234') {
 const db = Astro.locals.runtime.env.DB;
 
 // 1. 전체 요약 통계
-const totalVisitsResult = await db.prepare("SELECT COUNT(*) as count FROM stats WHERE type = 'visit'").first();
+const totalVisitsResult = await db.prepare("SELECT COUNT(*) as count FROM stats WHERE type = 'visit' AND path LIKE '/blog/%'").first();
 const totalVisits = totalVisitsResult ? totalVisitsResult.count : 0;
 
 const coupangClicksResult = await db.prepare("SELECT COUNT(*) as count FROM stats WHERE type = 'click'").first();
