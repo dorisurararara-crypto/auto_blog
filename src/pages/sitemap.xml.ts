@@ -17,9 +17,9 @@ export async function GET({ locals }) {
   const staticPages = [
     { url: '/', changefreq: 'daily', priority: '1.0' },
     { url: '/popular', changefreq: 'daily', priority: '0.8' },
-    { url: '/category/IT테크', changefreq: 'daily', priority: '0.7' },
-    { url: '/category/건강', changefreq: 'daily', priority: '0.7' },
-    { url: '/category/라이프', changefreq: 'daily', priority: '0.7' },
+    { url: `/category/${encodeURIComponent('IT테크')}`, changefreq: 'daily', priority: '0.7' },
+    { url: `/category/${encodeURIComponent('건강')}`, changefreq: 'daily', priority: '0.7' },
+    { url: `/category/${encodeURIComponent('라이프')}`, changefreq: 'daily', priority: '0.7' },
   ];
 
   let xml = `<?xml version="1.0" encoding="UTF-8"?>
@@ -39,7 +39,7 @@ export async function GET({ locals }) {
     const lastmodTag = lastmod ? `\n    <lastmod>${lastmod.split(' ')[0]}</lastmod>` : '';
     xml += `
   <url>
-    <loc>${site}/blog/${post.slug}</loc>${lastmodTag}
+    <loc>${site}/blog/${encodeURIComponent(post.slug)}</loc>${lastmodTag}
     <changefreq>monthly</changefreq>
     <priority>0.8</priority>
   </url>`;
