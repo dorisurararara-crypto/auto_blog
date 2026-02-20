@@ -7,6 +7,7 @@ from dotenv import load_dotenv
 
 from src.collector.reddit_collector import RedditCollector
 from src.collector.google_searcher import GoogleSearcher
+from src.processor.gemini_analyzer import GeminiAnalyzer
 from src.processor.claude_processor import ClaudeProcessor
 from src.painter.local_painter import LocalPainter
 from src.affiliate.coupang_helper import CoupangHelper
@@ -17,9 +18,10 @@ class GTBManager:
     def __init__(self):
         self.db_path = "data/gtb_storage.db"
         self._init_db()
-        print("[*] GTB 매거진 엔진 최적화 버전 가동 중...")
+        print("[*] GTB 매거진 '본질 강화' 엔진 가동 중...")
         self.collector = RedditCollector()
         self.searcher = GoogleSearcher()
+        self.analyzer = GeminiAnalyzer()
         self.processor = ClaudeProcessor()
         self.painter = LocalPainter()
         self.affiliate = CoupangHelper()
@@ -29,9 +31,22 @@ class GTBManager:
             "Gadgets": "IT테크",
             "HomeImprovement": "라이프",
             "Technology": "IT테크",
-            "BuyItForLife": "라이프"
+            "BuyItForLife": "라이프",
+            "LifeProTips": "꿀팁",
+            "ExplainLikeImFive": "지식",
+            "Biohacking": "건강"
         }
         self.target_subreddits = list(self.category_map.keys())
+
+    def _extract_search_query(self, title):
+        """제목에서 검색에 유리한 핵심 키워드를 추출합니다."""
+        # 불용어 제거 (간이 버전)
+        stop_words = ['how', 'to', 'the', 'a', 'is', 'are', 'what', 'why', 'in', 'of', 'for', 'on', 'with', 'and', 'my', 'do', 'any', 'best', 'new']
+        words = re.sub(r'[^a-zA-Z\s]', '', title).lower().split()
+        filtered_words = [w for w in words if w not in stop_words and len(w) > 2]
+        
+        # 핵심 키워드 3-4개 조합
+        return " ".join(filtered_words[:4])
 
     def _init_db(self):
         os.makedirs("data", exist_ok=True)
@@ -52,7 +67,7 @@ class GTBManager:
     def mark_as_processed(self, reddit_id, title, file_path):
         conn = sqlite3.connect(self.db_path)
         cursor = conn.cursor()
-        cursor.execute("INSERT INTO posts (reddit_id, title, processed_date, file_path) VALUES (?, ?, ?, ?)",
+        cursor.execute("INSERT OR IGNORE INTO posts (reddit_id, title, processed_date, file_path) VALUES (?, ?, ?, ?)",
             (reddit_id, title, datetime.now().strftime("%Y-%m-%d %H:%M:%S"), file_path))
         conn.commit()
         conn.close()
@@ -65,6 +80,7 @@ class GTBManager:
     def parse_claude_result(self, raw_text):
         data = {}
         patterns = {
+            'vs_title': r'VS_TITLE:\s*(.*?)(?:\n---|\nTITLE:|$)',
             'title': r'TITLE:\s*(.*?)(?:\n---|\nSUMMARY:|$)',
             'summary': r'SUMMARY:\s*(.*?)(?:\n---|\nCONTENT:|$)',
             'content': r'CONTENT:\s*(.*?)(?:\n---|\nIMAGE_PROMPT:|$)',
@@ -83,25 +99,36 @@ class GTBManager:
 
     def run_pipeline(self):
         print("\n" + "="*60)
-        print(f"🚀 GTB 자동 포스팅 시작 (안전 모드): {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
+        print(f"🚀 GTB 수익화/유입 최적화 모드 시작: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
         print("="*60)
 
         today_str = datetime.now().strftime("%Y%m%d")
 
         for sub in self.target_subreddits:
-            # 상위 5개까지 가져와서 중복되지 않은 가장 최신 글 하나를 선택
-            posts = self.collector.fetch_top_posts(sub, limit=5)
+            # 후보군 10개를 가져옴 (Gemini가 분석할 재료)
+            posts = self.collector.fetch_top_posts(sub, limit=10)
             category_name = self.category_map.get(sub, "인사이트")
             
-            published_in_sub = False
-            for post in posts:
-                if self.is_already_processed(post['id']):
-                    print(f"[-] 중복 건너뛰기 ({sub}): {post['title'][:30]}...")
-                    continue
+            # 아직 처리하지 않은 후보들만 선별
+            candidates = [p for p in posts if not self.is_already_processed(p['id'])]
+            
+            if not candidates:
+                print(f"[-] {sub} 카테고리에 새로운 후보가 없습니다.")
+                continue
 
-                print(f"[*] 새 콘텐츠 발견! ({sub}): {post['title'][:30]}...")
-                search_query = " ".join(post['title'].split()[:3])
+            # [핵심] Gemini가 수익성과 유입 확률이 가장 높은 주제 1개만 선정
+            print(f"[*] Gemini가 {len(candidates)}개의 후보 중 '황금 주제' 분석 중...")
+            selected_posts = self.analyzer.analyze_and_rank_topics(candidates)
+            
+            published_in_sub = False
+            for post in selected_posts:
+                print(f"[!] 최종 당첨! ({sub}): {post['title']}")
+                
+                # 구체적인 롱테일 키워드로 한국 트렌드 검색
+                search_query = post.get('target_keywords', post['title']).split(',')[0]
                 korean_trends = self.searcher.search_korean_trends(search_query)
+                
+                # 고도화된 Claude 프로세서로 글 생성
                 processed_text = self.processor.process_post(post, korean_trends=korean_trends)
                 if not processed_text: continue
                 parsed_data = self.parse_claude_result(processed_text)
@@ -112,7 +139,6 @@ class GTBManager:
                 
                 os.makedirs("public/images", exist_ok=True)
                 if os.path.exists(f"data/images/{image_filename}"):
-                    # Windows에서 대상 파일이 이미 존재할 경우 에러가 나지 않도록 os.replace 사용
                     import shutil
                     shutil.move(f"data/images/{image_filename}", f"public/images/{image_filename}")
                 
@@ -129,15 +155,15 @@ class GTBManager:
                     fallback_kw = " ".join(parsed_data.get('title', '').split()[:2])
                     coupang_items = self.affiliate.search_products(fallback_kw, limit=3)
 
-                # [DB 저장 로직] 파일을 만드는 대신 Cloudflare D1에 직접 INSERT
+                # [DB 저장 로직] Cloudflare D1에 직접 INSERT
                 safe_title = parsed_data.get('title', 'no_title').replace("'", "''")
                 safe_summary = parsed_data.get('summary', '').replace("'", "''")
-                # 본문 마크다운 결합
+                # 본문 마크다운 결합 (수익화 CTA 및 버튼 강화)
                 full_content = f"## 💡 핵심 요약\n{parsed_data.get('summary')}\n\n{parsed_data.get('content')}"
                 if coupang_items:
-                    full_content += "\n\n---\n### 🛒 추천 상품\n"
+                    full_content += "\n\n---\n### 🛒 추천 상품 (최저가 및 재고 확인)\n"
                     for item in coupang_items:
-                        full_content += f"- **[{item['name']}]({item['link']})** ({item['price']}원)\n"
+                        full_content += f"- **[{item['name']}]({item['link']})** ({item['price']}원) - *실시간 할인 확인하기*\n"
                     full_content += "\n*쿠팡 파트너스 활동의 일환으로 수수료를 제공받습니다.*\n"
                 
                 safe_content = full_content.replace("'", "''")
@@ -146,29 +172,26 @@ class GTBManager:
                 
                 print(f"[*] DB에 포스팅 저장 중: {safe_title}")
                 
-                # D1 실행 (원격 배포된 DB에 즉시 반영)
-                db_name = "auto-blog-db" # 실제 D1 데이터베이스 이름
-                sql = f"INSERT INTO posts (slug, title, summary, content, category, image_url) VALUES ('{slug}', '{safe_title}', '{safe_summary}', '{safe_content}', '{category_name}', '{image_url}');"
+                # D1 실행
+                db_name = "auto-blog-db"
+                sql = f"INSERT OR IGNORE INTO posts (slug, title, summary, content, category, image_url) VALUES ('{slug}', '{safe_title}', '{safe_summary}', '{safe_content}', '{category_name}', '{image_url}');"
                 
-                # 임시 SQL 파일 생성
                 with open("temp.sql", "w", encoding="utf-8") as f:
                     f.write(sql)
                 
-                # D1 실행
                 os.system(f"npx wrangler d1 execute {db_name} --remote --file=temp.sql --yes")
                 os.remove("temp.sql")
 
                 self.mark_as_processed(post['id'], parsed_data.get('title'), f"db://{slug}")
                 print(f"[+++] DB 발행 완료: {slug}")
                 
-                # 이미지 파일은 여전히 깃허브에 올려야 함 (public/images)
                 os.system("git add public/images/*")
                 os.system(f"git commit -m \"Image: {image_filename}\"")
                 os.system("git push origin main")
                 
                 published_in_sub = True
                 time.sleep(5)
-                break # 한 개의 글을 발행했으면 다음 카테고리로 이동
+                break 
 
             if not published_in_sub:
                 print(f"[-] {sub} 카테고리에 새로 발행할 수 있는 글이 없습니다.")

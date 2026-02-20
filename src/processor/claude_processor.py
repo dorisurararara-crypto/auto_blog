@@ -8,50 +8,75 @@ class ClaudeProcessor:
     def __init__(self):
         api_key = os.getenv("ANTHROPIC_API_KEY")
         self.client = anthropic.Anthropic(api_key=api_key)
-        self.model = "claude-sonnet-4-5" 
+        self.model = "claude-sonnet-4-5"
 
     def process_post(self, raw_post, korean_trends=None):
         """
-        Reddit 원문과 한국 상위 블로그 트렌드를 결합하여 포스팅을 생성합니다.
+        Reddit 원문과 한국 트렌드를 결합하여 'A vs B 비교 분석글'을 생성합니다.
         """
         trend_context = ""
         if korean_trends:
-            trend_context = f"\n[현재 한국 상위 블로그 트렌드 정보]\n{korean_trends}\n"
+            trend_context = f"\n[참고: 현재 한국 시장의 관심 키워드 및 트렌드]\n{korean_trends}\n"
+
+        compare_a = raw_post.get('compare_a', '')
+        compare_b = raw_post.get('compare_b', '')
+        compare_context = ""
+        if compare_a and compare_b:
+            compare_context = f"\n[비교 대상]\nA: {compare_a}\nB: {compare_b}\n"
 
         prompt = f"""
-        당신은 한국의 네이버 블로그와 티스토리에서 검색 상위 1%를 차지하는 최고급 콘텐츠 에디터입니다.
-        해외 Reddit의 최신 정보와 한국의 상위 노출 트렌드를 결합하여 최고의 포스팅을 작성하세요.
+        당신은 해당 분야에서 10년 이상 경력을 가진 전문 비교 분석가입니다.
+        독자가 "A vs B" 검색 시 가장 먼저 찾게 되는, 압도적으로 유용한 비교 분석글을 작성합니다.
 
-        [Reddit 원문 정보]
+        [분석 대상 데이터]
         제목: {raw_post['title']}
-        본문: {raw_post['content']}
+        핵심 내용: {raw_post['content']}
+        트렌드 키워드: {raw_post.get('target_keywords', '')}
+        선정이유: {raw_post.get('analysis_reason', '')}
+        {compare_context}
         {trend_context}
 
-        [요청 사항]
-        1. 제목: 한국의 상위 노출 블로그들처럼 '클릭을 부르는 제목 패턴'을 사용하되, Reddit의 신선한 주제를 강조하세요. 
-           (예: 총정리, ~하는 이유, 약사/의사 추천 등 한국형 키워드 포함)
-        2. 본문: 한국 독자들이 선호하는 '가독성 좋은 구조' (이모지 활용, 명확한 소제목, 불렛 포인트)를 적용하세요.
-        3. 톤앤매너: 전문적이면서도 이웃집 블로거처럼 친근한 구어체를 사용하세요.
-        4. 상품 매칭: 본문 중간중간 자연스럽게 쿠팡에서 추천할만한 상품(영양제, it기기 등)의 필요성을 언급하세요.
+        [작성 원칙]
+        1. **제목 형식:** 반드시 "A vs B: 핵심 차이점과 선택 가이드" 형태로 작성. 비교 대상이 명확해야 함.
+        2. **객관적 비교:** 감정이 아닌 데이터와 스펙 기반으로 비교. 각 항목별 마크다운 표 필수 포함.
+        3. **구조화된 본문:**
+           - 서론: 왜 이 비교가 중요한지 (검색 의도 충족)
+           - 핵심 비교표: 가격, 성능, 특징 등 항목별 비교
+           - 상세 분석: 각 항목을 깊이 있게 설명
+           - 결론: "이런 사람은 A, 저런 사람은 B" 명확한 추천
+        4. **SEO 키워드 자연 삽입:** "A vs B", "A B 비교", "A B 차이" 등의 검색 키워드를 본문에 자연스럽게 포함.
+        5. **말투:** "~합니다"와 "~이죠"를 섞어 권위 있되 읽기 편한 어조. 이모지는 섹션당 최대 1개.
+        6. **한국 맥락 적용:** 한국 소비자 관점에서 가격, 구매처, 사용 환경 등을 고려하여 분석.
 
-        [출력 형식]
-        TITLE: [제목]
+        [본문 구조 - 반드시 준수]
+        ## 서론 (왜 비교해야 하는가)
+        ## 한눈에 보는 비교표
+        ## 상세 비교 분석
+        ### 항목 1
+        ### 항목 2
+        ### 항목 3
+        ## 결론: 당신에게 맞는 선택은?
+
+        [출력 형식 - 반드시 이 형식을 따르세요]
+        VS_TITLE: [A vs B 형식의 비교 대상 명시, 예: "에어팟 프로 vs 갤럭시 버즈"]
         ---
-        SUMMARY: [3줄 요약]
+        TITLE: [A vs B: 부제목 형식의 제목]
         ---
-        CONTENT: [본문 내용]
+        SUMMARY: [비교 핵심 요약 2-3문장]
         ---
-        IMAGE_PROMPT: [영문 이미지 프롬프트]
+        CONTENT: [본문 - 비교표 포함 마크다운]
         ---
-        KEYWORDS: [쿠팡 검색 키워드]
+        IMAGE_PROMPT: [두 제품/개념이 나란히 비교되는 전문적이고 깔끔한 사진 프롬프트]
+        ---
+        KEYWORDS: [A vs B, A B 비교, A B 차이 등 검색 의도 키워드]
         """
 
-        print(f"[*] Claude 4.5가 한국형 트렌드를 반영하여 가공 중...")
-        
+        print(f"[*] Claude가 비교 분석 콘텐츠를 생성 중...")
+
         try:
             message = self.client.messages.create(
                 model=self.model,
-                max_tokens=3000,
+                max_tokens=4000,
                 temperature=0.7,
                 messages=[{"role": "user", "content": prompt}]
             )
