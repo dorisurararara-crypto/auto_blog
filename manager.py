@@ -196,6 +196,17 @@ class GTBManager:
             if not published_in_sub:
                 print(f"[-] {sub} 카테고리에 새로 발행할 수 있는 글이 없습니다.")
 
+        # 사이트맵 재생성
+        print("[*] 사이트맵 재생성 중...")
+        try:
+            from generate_sitemap import main as generate_sitemap
+            generate_sitemap()
+            os.system("git add public/sitemap.xml")
+            os.system('git commit -m "Update sitemap.xml"')
+            os.system("git push origin main")
+        except Exception as e:
+            print(f"[!] 사이트맵 생성 실패: {e}")
+
         print("\n" + "="*60)
         print("✅ 모든 작업 완료.")
         print("="*60)
